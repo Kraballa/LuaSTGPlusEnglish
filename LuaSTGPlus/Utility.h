@@ -35,7 +35,8 @@ namespace LuaSTGPlus
 		}
 		~TimerScope()
 		{
-			m_Out = static_cast<float>(m_StopWatch.GetElpased());
+            // TODO!
+			//m_Out = static_cast<float>(m_StopWatch.GetElpased());
 		}
 	};
 
