@@ -1,879 +1,875 @@
-# luaSTG+ lua层API手册
+# luaSTG+ Lua API manual
 
-## 文档约定
+Translated by [@GCPBunBun](https://twitter.com/gcpbunbun).
 
-### 符号
+## Document Conventions
 
-- **[新]**： 表示该方法相对于基准代码增加了新的功能并保有兼容性
-- **[新增]**： 表示该方法为新增的方法，不存在于基准代码中
-- **[否决]**： 表示该方法可能在后续版本中移除，不再被维护
-- **[移除]**： 表示该方法被移除，与基准代码不兼容
-- **[改]**： 表示该方法相对于基准代码有所修改但保有兼容性
-- **[不兼容]**： 表示该方法相对基准代码有所修改且不兼容
-- **[补]**： 表示方法为基准代码中缺失的，不保证完全的兼容性
+### Symbols
 
-## 框架执行流程
+- **[NewCompatible]**：Indicates that this method adds new features and maintains compatibility with legacy versions.
+- **[NewIncompatible]**：Indicates that this method is new and does not exist in legacy versions.
+- **[Deprecated]**：Indicates that this method may be removed in subsequent releases and is no longer maintained.
+- **[Removed]**：Indicates that the method is removed and is not compatible with legacy versions.
+- **[ChangedCompatible]**：Indicates that the method is modified relative to older versions but maintains compatibility.
+- **[ChangedIncompatible]**：Indicates that the method has been modified and is incompatible with legacy versions.
+- **[Utility]**：Indicates that this method is missing from the benchmark code, does not guarantee full compatibility.
 
-- luaSTGPlus初始化
-- 初始化lua引擎
-- 装载`launch`文件执行初始化配置、装载资源包等
-- 初始化fancy2d引擎框架
-- 装载文件`core.lua`
-- 执行lua全局函数`GameInit`
-- 启动并执行游戏循环
-- 销毁框架并退出
+## Translation notes
 
-## 编码
+Paragraphs containing `(?)` contain either incomplete information or need alternate translations.
 
-- 程序将使用**UTF-8**作为lua代码的编码，如果lua端使用非UTF-8编码将在运行时导致乱码 **[不兼容]**
-- 程序将使用**UTF-8**作为资源包的编码，这意味着如果资源包中出现非UTF-8编码的字符将导致无法定位文件 **[不兼容]**
+## Framework Execution Process
 
-## 内建变量
+- LuaSTGPlus initialisation.
+- Initialize Lua engine.
+- Load the `launch` file to initialise the configuration, load resource bundles and more.
+- Initialize fancy2d engine and window.
+- Load the `core.lua` file.
+- Execute the `GameInit` global function.
+- Start and execute the game loop.
+- Destroy the window and exit.
 
-- args:table **[不兼容]**
+## Encoding
 
-	保存命令行参数
+- The program will use **UTF-8** as Lua's encoding. Non-UTF-8 encodings will result in garbled text at run-time. **[ChangedIncompatible]**
+- The program will use **UTF-8** as the encoding of resource bundles. If non-UTF-8 encoded characters appear in the resource bundle, the file will not be located. **[ChangedIncompatible]**
 
-		细节
-			luastg中该变量名称为arg，与老式可变参列表名称arg冲突。由于luajit不再支持使用arg访问可变参列表，为了减少编码错误，故将arg更名为lstg.args。
-			这可能会影响到launch中的代码。
+## Built-in Variables
 
-## 内建类
+- args:table **[ChangedIncompatible]**
+
+	Saves the command line parameters
+
+		Details
+			The name of the variable in LuaSTG is arg, which conflicts with the old arguments name arg. As LuaJIT no longer supports the use arg access variable list, in order to reduce coding errors, arg was renamed to lstg.args.
+			This may affect the code in launch.
+
+## Built-in Classes
 
 ### lstgColor
 
-lstgColor用于表示一个基于a,r,g,b四分量的32位颜色
+lstgColor is used to represent a 32-bit colour based on the four a, r, g, b components.
 
-#### 方法
+#### Methods
 
 - ARGB(lstgColor):number, number, number, number
 
-	返回颜色的a,r,g,b分量
+	Returns the colour a, r, g, b components.
 
-#### 元方法
+#### Meta-methods
 
 - __eq(lstgColor, lstgColor):boolean
 
-	判断两个颜色值是否相等
+	Determines whether the two colour values are equal.
 
 - __add(lstgColor, lstgColor):lstgColor
 
-	将两个颜色值相加，超出部分置为255
+	Adds two colour values with excess component values set to 255.
 
-- __sub(lstgColor, lstgColor):lstgColor **[新增]**
+- __sub(lstgColor, lstgColor):lstgColor **[NewIncompatible]**
 
-	将两个颜色值相减，下溢部分置为0
+	Subtracts the two colour values and sets negative components' values to 0.
 
-- __mul(lstgColor|number, lstgColor|number):lstgColor **[新]**
+- __mul(lstgColor|number, lstgColor|number):lstgColor **[NewCompatible]**
 
-	将两个颜色值的各个分量相乘或与一个数字相乘，超出部分置为255
+	Multiplies two colors, or multiplies a color by a number, wth excess component values being set to 255.
 
 - __tostring(lstgColor):string
 
-	打印类名，该值为`lstg.Color(a,r,g,b)`其中argb为颜色分量值
-
+	Returns a string representation of the lstgColor object in the format `lstg.Color(a,r,g,b)` where a, r, g and b are the components' values.
 
 ### lstgRand
 
-基于WELL512算法的随机数发生器，初始化时将使用系统tick计数作为种子 **[改]**
+Based on WELL512's random number generator algorithm, the system clock will be used as the seed. **[ChangedCompatible]**
 
-	细节
-		luaSTG实现中采用线性同余(?)方法产生随机数，luaSTG+采用WELL512算法产生随机数（该算法摘自《游戏编程精粹 7》）
+	Details
+		luaSTG's implementation used a linear congruency(?) method to generate random numbers. LuaSTG+ uses WELL512's algorithm instead to generate random numbers (the algorithm excerpt from "Game Programming Gems 7")
 
-	潜在兼容性问题
-		luaSTG实现中默认使用种子(0)初始化生成器
+	Potential compatibility issues
+		The seed (0) initialization generator is used by default in the luaSTG implementation.
 
-#### 方法
+#### Methods
 
 - Seed(lstgRand, number)
 
-	设置随机数种子（注意：number值不应该超过32bit无符号整数范围）
+	Sets a random number seed (Note: number value should not exceed 32bit unsigned integer range).
 
-- GetSeed(lstgRand) **[新增]**
+- GetSeed(lstgRand) **[NewIncompatible]**
 
-	返回随机数种子
+	Returns the random number seed.
 
 - Int(lstgRand, min:number, max:number):number
 
-	产生一个在[min,max]区间内的整型随机数，请确保min<=max
+	Generates an integer random number in the [min, max] interval (make sure min <= max).
 
 - Float(lstgRand, min:number, max:number):number
 
-	产生一个在[min,max]区间内的浮点型随机数，请确保min<=max
+	Produces a floating-point random number in the [min, max] interval (make sure that min <= max).
 
 - Sign(lstgRand):number
 
-	随机返回±1
+	Returns 1 randomly.
 
-#### 元方法
+#### Meta-methods
 
 - __tostring(lstgRand):string
 
-	打印类名，该值始终为`lstg.Rand object`
+	Returns the class' name. The value is always `lstg.Rand`
 
 ### lstgBentLaserData
 
-该类用于控制内建的曲线激光。
+This class is used to control the built-in curvilinear laser.
 
-	细节
-		luastg+中至多允许出现1024个激光，每个激光至多捕获512个节点。
-		曲线激光目前在实现上仍有问题，待日后优化。
+	Details
+	Up to 1024 lasers are allowed in luastg+ and up to 512 nodes per laser. Curvy lasers are still somewhat problematic, to be optimised in the future.
 
-#### 方法
+#### Methods
 
 - Update(lstgBentLaserData, base\_obj, length, width)
 
-	传入基础对象，获取基础对象的坐标信息构造下一个激光位置。length和width决定激光的节点数和节点宽度。节点宽度同时会影响碰撞。
+	Passes in the base object and gets the coordinate information of the base object to construct the next laser position. Length and width determines the laser node number and node width. The node width also affects the collision.
 
 - Release(lstgBentLaserData)
 
-	回收对象。（当前实现中无作用，对象交由GC回收）
+	Recycling objects. (No effect in the current implementation, object recycling by GC.)
 
-- Render(lstgBentLaserData, texture:string, blend:string, color:lstgColor, tex\_left:number, tex\_top:number, tex\_weight:number, tex\_height:number, [scale:number=1]) **[新]**
+- Render(lstgBentLaserData, texture:string, blend:string, color:lstgColor, tex\_left:number, tex\_top:number, tex\_weight:number, tex\_height:number, [scale:number=1]) **[NewCompatible]**
 
-	渲染曲线激光。参数为纹理、混合模式、颜色以及激光图像在纹理中的位置。scale用于控制激光纵向的缩放。
+	Renders curve laser. The parameters are texture, blend mode, color, and the location of the laser image in the texture. scale is used to control the zooming of the laser in the longitudinal direction.
 
-	注意，始终以纹理宽度方向作为激光的伸缩方向。
+	Note that the direction of the width of the texture is always used as the direction of the laser beam.
 
-	该函数受全局缩放系数影响。
+	This function is affected by the global scaling factor.
 
-- CollisionCheck(lstgBentLaserData, x:number, y:number, [rot:number=0, a:number=0, b:number=0, rect:boolean=false]):boolean  **[新]**
+- CollisionCheck(lstgBentLaserData, x:number, y:number, [rot:number=0, a:number=0, b:number=0, rect:boolean=false]):boolean  **[NewCompatible]**
 
-	检查当前对象和位于(x,y)的对象是否发生碰撞。
+	Checks if there is a collision between the current object and the object at (x, y).
 
 - BoundCheck(lstgBentLaserData):boolean
 
-	检查当前对象是否在边界内。若越界则返回false。
+	Checks if the current object is within the bounds. If out of bounds, returns false.
 
-## 内建方法
+## Built-in methods
 
-所有内建方法归类于lstg全局表中。
+All built-in methods are grouped in the lstg global table.
 
-### 框架控制方法
+### System methods
 
-- SetWindowed(boolean) **[不兼容]**
+- SetWindowed(boolean) **[ChangedIncompatible]**
 
-	设置窗口化(true)/非窗口化(false)。默认为true。
+	Sets windowed mode (true) or full-screen mode (false). The default is true.
 
-	**仅限初始化中使用**，不允许在运行时切换窗口模式。
+	**Use only during initialization**，window mode switching is not allowed at run-time.
 
-- SetFPS(number) **[不兼容]**
+- SetFPS(number) **[ChangedIncompatible]**
 
-	设置FPS锁定值。默认为60FPS。
+	Sets the FPS lock value. The default is 60 FPS.
 
-	**仅限初始化中使用**，不允许在运行时动态设置FPS。
+	**Use only during initialization**，switching FPS dynamically at run-time is not allowed.
 
 - GetFPS():number
 
-	获得当前的实时FPS。
+	Gets the current live FPS.
 
-- SetVsync(boolean) **[不兼容]**
+- SetVsync(boolean) **[ChangedIncompatible]**
 
-	设置是否垂直同步。默认为true。
+	Sets whether to use V-Sync. Defaults to true.
 
-	**仅限初始化中使用**，不允许在运行时动态设置垂直同步。
+	**Use only during initialization**，switching V-Sync modes at run-time is forbidden.
 
 - SetResolution(width:number, height:number)
 
-	设置分辨率。默认为640x480。
+	Sets the resolution. The default is 640x480.
 
-	仅限初始化中使用，不允许在运行时动态设置分辨率。
+	For initialization purposes only, it is not allowed to set the resolution dynamically at run time.
 
-- ChangeVideoMode(width:number, height:number, windowed:boolean, vsync:boolean):boolean **[新增]**
+- ChangeVideoMode(width:number, height:number, windowed:boolean, vsync:boolean):boolean **[NewIncompatible]**
 
-	改变视频选项。若成功返回true，否则返回false并恢复到上次的视频模式。
+	Changes video options. Returns true if successful, otherwise returns false and reverts to the previous video mode.
 
-	**仅限运行时使用**
+	**Use only at run time.**
 
 - SetSplash(boolean)
 
-	设置是否显示光标。默认为false。
+	Sets whether to display the cursor. The default is false.
 
 - SetTitle(string)
 
-	设置窗口标题。默认为"LuaSTGPlus"。
+	Sets the window title. The default is "LuaSTGPlus".
 
 - SystemLog(string)
 
-	写出日志。
+	Writes a string to the log file.
 
 - Print(...)
 
-	将若干值写到日志。
+	Writes several values ​​to the log.
 
-- LoadPack(path:string, [password:string]) **[新]**
+- LoadPack(path:string, [password:string]) **[NewCompatible]**
 
-	加载指定位置的ZIP资源包，可选填密码。
+	Loads the specified location of the ZIP resource package, optional password.
 
-	失败将导致错误。
+	Failures will lead to an error.
 
-		细节
-			后加载的资源包有较高的查找优先级。这意味着可以通过该机制加载资源包来覆盖基础资源包中的文件。
-			一旦zip文件被打开，将不能被访问。
-			加载文件时将按照优先级依次搜索资源包，若资源包中不含文件则从当前目录加载。
+		Details
+			After loading, the resource package has a higher search priority. This means that resource bundles can be loaded by this mechanism to overwrite the files in the underlying resource bundle.
+			Once the zip file is opened, it will not be accessible.
+			When the file is loaded, the resource package will be searched sequentially according to the priority. If the resource package does not contain the file, the resource package will be loaded from the current directory.
 
 - UnloadPack(path:string)
 
-	卸载指定位置的资源包，要求路径名必须一致。
-	
-	若资源包不存在不发生错误。
+	Uninstalls the resource package at the specified location, the path name must be consistent.
 
-- ExtractRes(path:string, target:string) **[补]**
+	If the resource package does not exist, an error will occur.
 
-	将资源包中的数据解压到本地。
+- ExtractRes(path:string, target:string) **[Utility]**
 
-	若失败将抛出错误。
+	Extracts the data in the resource bundle to local.
+
+	Failure will show an error.
 
 - DoFile(path:string)
 
-	执行指定路径的脚本。已执行过的脚本会再次执行。
+	Executes the specified path of the script. The executed script will be executed again(?).
 
-	若文件不存在、编译失败、执行失败则抛出错误。
+	If the file does not exist, the compilation fails, as such, the implementation fails and creates an error.
 
-- ShowSplashWindow([path:string]) **[新增]**
+- ShowSplashWindow([path:string]) **[NewIncompatible]**
 
-	装载载入窗口。参数为图片路径。
+	Displays the splash window. The argument specifies the splash image's path.
 
-	若图片加载失败或为空则使用内置的图片打开窗口。
+	If the image fails to load or is empty, a built-in image is used.
 
-----------
-
-### 对象池管理方法
+### Object pool management methods
 
 - GetnObj():number
 
-	获取对象池中对象个数。
+	Gets the number of objects in the object pool.
 
-- UpdateObjList() **[否决]**
+- UpdateObjList() **[Deprecated]**
 
-	更新对象池。此时将所有对象排序并归类。
+	Updates the object pool. All objects are sorted and categorized.
 
-	排序规则：uid越小越靠前
+	Collation: UID is smaller the more forward it is(?).
 
-		细节
-			luaSTG+中该函数不再起任何作用，对象表总是保持有序的。
+		Details
+			This function no longer functions in LuaSTG+, and the object tables are always ordered.
 
 - ObjFrame()
 
-	更新对象列表中所有对象，并更新属性。
+	Updates all the objects in the object list and update their properties.
 
-	**禁止在协程上调用该方法。**
+	**It's forbidden to call this method on the co-routine.**
 
-		细节
-			按照下列顺序更新这些属性：
+		Details
+			Updates these properties in the following order:
 				vx += ax
 				vy += ay
 				x += vx
 				y += vy
 				rot += omiga
-				更新绑定的粒子系统（若有）
+				Updates the bound particle system (if any)
 
 - ObjRender()
 
-	渲染所有对象。此时将所有对象排序。
+	Renders all objects. All objects are sorted at this time.
 
-	**禁止在协程上调用该方法。**
+	**It's forbidden to call this method on the co-routine.**
 
-	排序规则：layer小的先渲染，若layer相同则按照uid
+	Sorting rules: layer first small rendering, if the same layer is in accordance with uid(?).
 
-		细节
-			luaSTG+中渲染列表总是保持有序的，将不会每次排序。
+		Details
+			The list of renderings in LuaSTG+ is always ordered and will not be sorted each time.
 
 - SetBound(left:number, right:number, bottom:number, top:number)
 
-	设置舞台边界。
+	Sets the stage boundaries.
 
 - BoundCheck()
 
-	执行边界检查。注意BoundCheck只保证对象中心还在范围内，不进行碰撞盒检查。
+	Performs a border check. Note that BoundCheck only ensures that the center of the object is still within range and does not check the collision box.
 
-	**禁止在协程上调用该方法。**
+	**It's forbidden to call this method on the co-routine.**
 
 - CollisionCheck(A:groupid, B:groupid)
 
-	对组A和B进行碰撞检测。如果组A中对象与组B中对象发生碰撞，将执行A中对象的碰撞回调函数。
+	Group A and B collision detection. If an object in group A collides with an object in group B, the collision callback function for the object in A is executed.
 
-	**禁止在协程上调用该方法。**
+	**It's forbidden to call this method on the co-routine.**
 
 - UpdateXY()
 
-	刷新对象的dx,dy,lastx,lasty,rot（若navi=true）值。
+	Refreshes the dx, dy, lastx, lasty, rot (if navi = true) values ​​of the object.
 
-	**禁止在协程上调用该方法。**
+	**It's forbidden to call this method on the co-routine.**
 
 - AfterFrame()
 
-	刷新对象的timer和ani_timer，若对象被标记为del或kill将删除对象并回收资源。
+	Refreshes the object timer and ani_timer. If the object is marked as del or kill, the object will be deleted and its resources freed.
 
-	**禁止在协程上调用该方法。**
+	**It's forbidden to call this method on the co-routine.**
 
-		细节
-			对象只有在AfterFrame调用后才会被清理，在此之前可以通过设置对象的status字段取消删除标记。
+		Details
+			Objects are only cleaned up after an AfterFrame call. You can still preserve them by updating the object's status field.
 
 - New(class)
 
-	创建新对象。将累加uid值。
+	Creates a new object. A new UID will be generated for it.
 
-		细节
-			该方法使用class创建一个对象，并在构造对象后调用class的构造方法构造对象。
-			被创建的对象具有如下属性：
-				x, y             坐标
-				dx, dy           (只读)距离上一次更新的坐标增量
-				rot              角度
-				omiga            角度增量
-				timer            计数器
-				vx, vy           速度
-				ax, ay           加速度
-				layer            渲染层级
-				group            碰撞组
-				hide             是否隐藏
-				bound            是否越界销毁
-				navi             是否自动更新朝向
-				colli            是否允许碰撞
-				status           对象状态，返回del kill normal
-				hscale, vscale   横向、纵向的缩放程度
-				class            对象的父类
-				a, b             碰撞盒大小
-				rect             是否为矩形碰撞盒
-				img              
-				ani              (只读)动画计数器
-			被创建对象的索引1和2被用于存放类和id【请勿修改】
+		Details
+			This method uses class to create an object, and after constructing the object, it calls the constructor of class to construct the object.
+			The created object has the following properties：
+				x, y             coordinates
+				dx, dy           (read only) the coordinate increment from the last update
+				rot              angle
+				omiga            omiga angle increment
+				timer            counter
+				vx, vy           speed
+				ax, ay           acceleration
+				layer            rendering priority
+				group            collision group
+				hide             whether this object should be hidden or rendered
+				bound            whether to destroy this object if out of bounds
+				navi             whether to automatically update its orientation
+				colli            whether to use collision detection
+				status           object status; del, kill, or normal
+				hscale, vscale   horizontal and vertical scale/zoom level
+				class            object's parent class
+				a, b             collision box size(?)
+				rect             rectangular collision box
+				img              (undocumented)
+				ani              (read only) animation counter (frame?)
+			Index 1 and 2 of the created object are used to store the class and id (immutable!)
 
-			其中父类class需满足如下形式：
+			Parent classes must meet the following standard：
 				is_class = true
-				[1] = 初始化函数 (object, ...)
-				[2] = 删除函数(DEL) (object, ...) [新]
-				[3] = 帧函数 (object)
-				[4] = 渲染函数 (object)
-				[5] = 碰撞函数 (object, object)
-				[6] = 消亡函数(KILL) (object, ...) [新]
-			上述回调函数将在对象触发相应事件时被调用
-				
-			luastg+提供了至多32768个空间共object使用。超过这个大小后将报错。
+				[1] = initialization function (object, ...)
+				[2] = delete function (DEL) (object, ...) **[NewCompatible]**
+				[3] = frame function (object)
+				[4] = rendering function (object)
+				[5] = collision function (object, object)
+				[6] = death function (KILL) (object, ...) **[NewCompatible]**
+			The above callback functions will be called when the object triggers the corresponding event.
 
-- Del(object, [...]) **[新]**
+			LuaSTG+ provides up to 32768 spaces for object usage. Exceding this limit will result in an error being reported.
 
-	通知删除一个对象。将设置标志并调用回调函数。
+- Del(object, [...]) **[NewCompatible]**
 
-	**若在object后传递多个参数，将被传递给回调函数。**
+	Notice to delete an object. The flag will be set and the callback function will be called.
 
-- Kill(object, [...]) **[新]**
+	**If you pass multiple parameters in the object, they will be passed to the callback function.**
 
-	通知杀死一个对象。将设置标志并调用回调函数。
+- Kill(object, [...]) **[NewCompatible]**
 
-	**若在object后传递多个参数，将被传递给回调函数。**
+	Notice to kill an object. The flag will be set and the callback function will be called.
+
+	**If you pass multiple parameters in the object, will be passed to the callback function.**
 
 - IsValid(object)
 
-	检查对象是否有效。
+	Checks whether the object is valid.
 
-- GetV(object):number, number **[新增]**
+- GetV(object):number, number **[NewIncompatible]**
 
-	获取对象的速度，依次返回速度大小和速度方向。
+	Gets the speed of the object. Returns the speed and speed direction.
 
 - SetV(object, v:number, a:number, track:boolean)
 
-	以<速度大小,角度>设置对象的速度，若track为true将同时设置r。
+	Sets the speed of the object at &lt;Speed ​​Size, Angle&gt;, and set r if track is true(?).
 
 - SetImgState(object, blend:string, a:number, r:number, g:number, b:number)
 
-	设置资源状态。blend指示混合模式（含义见后文）a,r,g,b指定颜色。
+	Sets the resource status. blend Indicates a mixed mode blending (see SetImageState's documentation below for details.) a, r, g, and b specifies the alpha and color values.
 
-	该函数将会设置和对象绑定的精灵、动画资源的混合模式，该设置对所有同名资源都有效果。 
+	This function will set the blending mode of the sprite and animation resource bound to the object, and this setting will have effect on all resources of the same name.
 
 - Angle(a:object | x1:number, b:object | y1:number, [x2:number, y2:number]):number
 
-	若a,b为对象，则求向量(对象b.中心 - 对象a.中心)相对x轴正方向的夹角。否则计算tan2(y2-y1, x2-x1)。
+	If a, b are objects then it returns the vector (object b center - object a center) with respect to the positive x-axis angle(?). Otherwise, tan2(y2-y1, x2-x1) is calculated.
 
 - Dist(a:object|number, b:object|number, [c:number, d:number]):number
 
-	求距离。若a与b为对象则计算a与b之间的距离。否则计算向量(c,d)与(a,b)之间的距离。
+	If a and b are objects, then it returns the distance between a and b. Otherwise returns the distance between (c, d) and (a, b).
 
 - BoxCheck(object, left:number, right:number, top:number, bottom:number):boolean
 
-	检查对象中心是否在所给范围内。
+	Checks whether the object center is within the given range.
 
 - ResetPool()
 
-	清空并回收所有对象。
+	Empties and recycle all objects.
 
 - DefaultRenderFunc(object)
 
-	在对象上调用默认渲染方法。
+	Invokes the default rendering method on the object.
 
-- NextObject(groupid:number, id:number):number, object **[不兼容]**
+- NextObject(groupid:number, id:number):number, object **[ChangedIncompatible]**
 
-	获取组中的下一个元素。若groupid为无效的碰撞组则返回所有对象。
+	Gets the next element in the group. If groupid is an invalid collision group then it returns all objects.
 
-	返回的第一个参数为id（luastg中为idx），第二个参数为对象
+	The first parameter returned is id (idx in luastg), and the second is the object
 
-		细节
-			luastg中NextObject接受的第二个参数为组中的元素索引而非id。
-			出于效率考虑，luastg+中接受id查询下一个元素并返回下一个元素的id。
+		Details
+			The second parameter accepted in NextObject in luastg is the element index in the group rather than id.
+			For efficiency, luastg+ accepts id for the next element and returns the id of the next element(?).
 
-- ObjList(groupid:number):NextObject, number, number **[不兼容]**
+- ObjList(groupid:number):NextObject, number, number **[ChangedIncompatible]**
 
-	产生组遍历迭代器。
+	Generates a group traversal iterator.
 
-		细节
-			由于NextObject行为发生变更，ObjList只在for循环中使用时可以获得兼容性。
+		Details
+			Because NextObject behavior changes, ObjList only gets compatibility when used in a for loop.
 
 - ParticleFire(object)
-	
-	启动绑定在对象上的粒子发射器。
+
+	Launches the particle emitter bound to the object.
 
 - ParticleStop(object)
 
-	停止绑定在对象上的粒子发射器。
+	Stops binding the particle emitter on the object.
 
 - ParticleGetn(object)
 
-	返回绑定在对象上的粒子发射器的存活粒子数。
+	Returns the number of surviving particles bound to the particle emitter on the object.
 
 - ParticleGetEmission(object)
 
-	获取绑定在对象上粒子发射器的发射密度。（个/秒）
+	Gets the emission density of the particle emitter bound to the object. (A / second)(?)
 
-		细节
-			luastg/luastg+更新粒子发射器的时钟始终为1/60s。
+		Details
+			luastg/luastg+ updates, the particle emitter's clock is always 1 / 60s(?)
 
 - ParticleSetEmission(object, count)
 
-	设置绑定在对象上粒子发射器的发射密度。（个/秒）
+	Sets the emission density of the particle emitter bound to the object. (A / second)(?)
 
-----------
+### Resource management
 
-### 资源管理系统
+luastg / luastg+ provides two resource pools: a global resource pool and level resource pools, for storing resources for different purposes.
 
-luastg/luastg+提供了两个资源池：全局资源池、关卡资源池，用于存放不同用途的资源。
+The resource pools use string hash tables to manage their resources and its keys can not be repeated.
 
-资源池使用字符串哈希表进行管理，一个池中的同种资源其名称不能重复。
+All load functions load resources into their corresponding pools according to the current resource pool category. Resources are first looked up in level resource pools. If not found, the global resource pool is looked up next.
 
-所有的加载函数会根据当前的资源池类别加载到对应的池中。寻找资源时优先到关卡资源池中寻找，若没有再到全局资源池中寻找。
+	Resource types
+		1 texture
+		2 image
+		3 animation
+		4 music
+		5 sound effects
+		6 particles
+		7 texture fonts
+		8 TTF fonts
+		9 shaders **[NewCompatible]**
 
-	资源类型表
-		1 纹理
-		2 图像
-		3 动画
-		4 音乐
-		5 音效
-		6 粒子
-		7 纹理字体
-		8 ttf字体
-		9 shader [新增]
+	Shader support
+		Shaders use the D3D9's fx format, which is interconnected with the script system in fx by adding a comment called "binding" to the annotation(?)
+		Allow the end of the assignment type lua end there(?)
+			string：interpreted and positioned to the texture resource
+			number：interpreted as float
+			lstgColor：interpreted as float4
+		Shader is currently used only by the PostEffect function(s).
 
-	Shader补充说明
-		Shader使用D3D9的fx格式，在fx中通过在Annotation中添加名为"binding"的注释来和脚本系统互联。
-		允许在lua端进行赋值的类型有
-			string：被解释并定位到纹理资源
-			number：被解释成float
-			lstgColor：被解释成float4
-		当前，Shader仅被用于PostEffect。
-		
-	RenderTarget补充说明
-		RenderTarget大小会和屏幕大小保持一致，且不可自定义。
-		注意到RenderTarget即可被作为渲染输出，也可以作为像素的输入源，因此同一时刻，当RenderTarget正被使用时，任何在其上的渲染操作都是无效的。出于效率考虑，lstg+没有对这种行为作出检查，使用时必须自行避免，以免导致出现显卡驱动崩溃等问题。
+	Render target support
+		RenderTarget's size will be consistent with the screen/window's size and can not be customized.
+		Notice that the RenderTarget can either be rendered as a render or as an input source to a pixel, so at the same time any renderer on it is invalid while the RenderTarget is being used. For efficiency, lstg + did not check this behavior, the use must be avoided, so as to avoid causing graphics driver crash and other issues(?)
 
-- RemoveResource(pool:string, [type:integer, name:string]) **[新]**
+- RemoveResource(pool:string, [type:integer, name:string]) **[NewCompatible]**
 
-	若只有一个参数，则删除一个池中的所有资源。否则删除对应池中的某个资源。参数可选global或stage。
+	If there is only one parameter, then delete all the resources in a pool. Otherwise delete a resource from the corresponding pool. Optional global parameter or stage(?).
 
-	若资源仍在使用之中，将继续保持装载直到相关的对象被释放。
+	If the resource is still in use, it will remain loaded until the relevant object is released.
 
 - CheckRes(type:integer, name:string):string|nil
 
-	获得一个资源的类别，通常用于检测资源是否存在。
+	Gets a category of resources, usually used to detect the existence of resources(?).
 
-		细节
-			方法会根据名称先在全局资源池中寻找，若有则返回global。
-			若全局资源表中没有找到资源，则在关卡资源池中找，若有则返回stage。
-			若不存在资源，则返回nil。
+		Details
+			The method will be based on the name of the global resource pool to find, if it returns global(?)
+			If there is no resource found in the global resource table, then find in the level resource pool, if there is return stage.
+		  If there is no resource, returns nil.
 
 - EnumRes(type:integer):table, table
 
-	枚举资源池中某种类型的资源，依次返回全局资源池、关卡资源池中该类型的所有资源的名称。
+	Enumerates some type of resource in the resource pool and return the names of all resources of this type in the global resource pool and the level resource pool in turn.
 
 - GetTextureSize(name:string):number, number
 
-	获取纹理的宽度和高度。
+	Gets the width and height of a texture.
 
 - LoadTexture(name:string, path:string, [mipmap:boolean=false])
 
-	装载纹理，支持多种格式但是首推png。其中mipmap为纹理链。
+	Loads texture, support a variety of formats but devaluation(?) PNG. Which mipmap texture chain(?).
 
 - LoadImage(name:string, tex\_name:string, x:number, y:number, w:number, h:number, [a:number, [b:number, [rect:boolean]]])
 
-	在纹理中创建图像。x、y指定图像在纹理上左上角的坐标（纹理左上角为（0,0），向下向右为正方向），w、h指定图像的大小，a、b、rect指定横向、纵向碰撞判定和判定形状。
+	Creates an image using a texture. x, y specifies the coordinates of the upper left corner of the texture (the top left corner of the texture is (0,0), the bottom right is the positive direction), w, h specifies the size of the image, a, b, rect specifies the horizontal and vertical collisions detection and determines the shape.
 
-		细节
-			当把一个图像赋予对象的img字段时，它的a、b、rect属性会自动被赋值到对象上。
+		Details
+			When an img field is assigned to an object, its a, b, and rect properties are automatically assigned to the object.
 
 - SetImageState(name:string, blend\_mode:string, \[vertex\_color1:lstgColor, vertex\_color2:lstgColor, vertex\_color3:lstgColor, vertex\_color4:lstgColor\])
 
-	设置图像状态，可选一个颜色参数用于设置所有顶点或者给出4个颜色设置所有顶点。
+	Sets the image state, an optional color parameter is used to set all the vertices or given all the vertices in 4 colors.
 
-		混合选项可选
-			""          默认值，=mul+alpha
-			"mul+add"   顶点颜色使用乘法，目标混合使用加法
-			"mul+alpha" (默认)顶点颜色使用乘法，目标混合使用alpha混合
-			"mul+sub"   顶点颜色使用乘法，结果=图像上的颜色-屏幕上的颜色 [新增]
-			"mul+rev"   顶点颜色使用乘法，结果=屏幕上的颜色-图像上的颜色 [新增]
-			"add+add"   顶点颜色使用加法，目标混合使用加法
-			"add+alpha" 顶点颜色使用加法，目标混合使用alpha混合
-			"add+sub"   顶点颜色使用加法，结果=图像上的颜色-屏幕上的颜色 [新增]
-			"add+rev"   顶点颜色使用加法，结果=屏幕上的颜色-图像上的颜色 [新增]
+		The blending parameter is optional and can be an empty string
+			""          The default: mul+alpha
+			"mul+add"   The "mul + add" vertex color uses multiplication and the target blend uses addition
+			"mul+alpha" (The default.) Vertex colors use multiplication and target blending uses alpha blending
+			"mul+sub"   Vertex uses multiplication, the result = the color on the image - the color on the screen(?) **[NewIncrease]**
+			"mul+rev"   Vertex color using multiplication, result = color on screen - color on image(?) **[NewIncrease]**
+			"add+add"   Vertex color and destination both use additive blending
+			"add+alpha" Vertex color uses addition and the destination blend uses alpha blending
+			"add+sub"   Vertex color uses addition blending, result = color on image - color on screen(?) **[NewIncrease]**
+			"add+rev"   Vertex color uses additive blending, result = screen color - color on image(?) **[NewIncrease]**
 
 - SetImageCenter(name:string, x:number, y:number)
 
-	设置图像中心。x和y相对图像左上角。
+	Sets the image center, with x and y being relative to the upper left corner of the image.
 
 - LoadAnimation(name:string, tex\_name:string, x:number, y:number, w:number, h:number, n:integer, m:integer, intv:integer, [a:number, [b:number, [rect:boolean]]])
 
-	装载动画。a、b、rect含义同Image。其中x、y指定第一帧的左上角位置，w、h指定一帧的大小。n和m指定纵向横向的分割数，以列优先顺序排列。intv指定帧间隔。
+	Loading animation. a, b, rect with the same meaning. Where x, y specifies the upper left corner of the first frame position, w, h specifies the size of a frame. n and m specify the number of vertical and horizontal division, in order of priority. intv specifies the frame interval.
 
-	动画总是循环播放的。
+	The animation is continuosly re-played.
 
 - SetAnimationState(name:string, blend\_mode:string, \[vertex\_color1:lstgColor, vertex\_color2:lstgColor, vertex\_color3:lstgColor, vertex\_color4:lstgColor\])
 
-	含义类似于SetImageState。
+	Similar to SetImageState.
 
 - SetAnimationCenter(name:string, x:number, y:number)
 
-	含义类似于SetImageCenter。
+	Similar to SetImageCenter.
 
 - LoadPS(name:string, def\_file:string, img_name:string, [a:number, [b:number, [rect:boolean]]])
 
-	装载粒子系统。def\_file为定义文件，img_name为粒子图片。a、b、rect含义同上。
+	Load particle system. def\_file is the definition file, img\_name is the particle image. a, b, rect have the same meaning as above.
 
-	使用HGE所用的粒子文件结构。
+	Particle file structure used by HGE.
 
 - LoadFont(name:string, def\_file:string, \[bind\_tex:string, mipmap:boolean=true\])
 
-	装载纹理字体。name指示名称，def\_file指示定义文件，mipmap指示是否创建纹理链，默认创建。bind\_tex参数为f2d纹理字体所用，指示绑定的纹理的完整路径。
+	For loading texture fonts. name indicates the name, def\_file indicates the definition file, mipmap indicates whether or not to create a texture chain, created by default. The bind\_tex parameter is used by the f2d texture font to indicate the full path of the bound texture.
 
-		细节
-			luastg+支持HGE的纹理字体和fancy2d的纹理字体（xml格式）。
-			对于hge字体，将根据定义文件在字体同级目录下寻找纹理文件，对于f2d字体，将使用bind_tex参数寻找纹理。
+		Details
+			LuaSTG+ supports HGE texture fonts and fancy2d texture fonts (xml format).
+			For HGE fonts, the texture files are looked for under the same-level directory as the definition files, and for f2d fonts, the bind\_tex parameter is used to find the texture.
 
 - SetFontState(name:string, blend_mode:string, [color:lstgColor])
 
-	设置字体的颜色、混合模式。具体混合选项见上文。
+	Sets the font color, mixed mode(?). See the concrete mixing options above(?)
 
-- SetFontState2(...)  **[移除]**
+- SetFontState2(...)  **[Removed]**
 
-	该方法用于设置HGE的纹理字体，luastg+不支持此方法。
+	This method was used to set the texture font of HGE, LuaSTG+ does not support this method anymore.
 
-		细节
-			大部分现有代码中没有使用该方法，可以无视。
+		Details
+			Most of the existing code does not use this method, you can ignore it.
 
-- LoadTTF(name:string, path:string, width:number, height:number) **[不兼容]**
+- LoadTTF(name:string, path:string, width:number, height:number) **[ChangedIncompatible]**
 
-	该方法用于加载TTF字体。name指定资源名称，path指定加载路径，width和height指定字形大小，建议设为相同值。
+	This method is used to load TTF fonts. name specifies the resource name, path specifies the loading path, width and height specify the font size, it is recommended to set the same value.
 
-		细节
-			LoadTTF方法相比luastg有巨大不同。由于使用内置的字体渲染引擎，当前实现下不需要将字体解压并导入系统。
-			但是相对的、无法使用诸如加粗、倾斜等效果。同时参数被缩减到4个。
-			此外，若无法在path所在位置加载字体文件，
+		Details
+			The LoadTTF method is vastly different than in LuaSTG. Due to the built-in font rendering engine, the font does not need to be extracted and imported into the system under the current implementation.
+			But the opposite, you can not use such as bold, tilt and other effects. At the same time the parameters are reduced to four.
+			In addition, if you can not load the font file in the path location(?).
 
-- RegTTF(...) **[否决]**
+- RegTTF(...) **[Deprecated]**
 
-	该函数不再起效。将于日后版本移除。
+	This function no longer works. Will be removed in a future version.
 
 - LoadSound(name:string, path:string)
 
-	装载音效。仅支持wav或ogg，推荐使用wav格式。
+	Loads sound effects. Only supports wav or ogg, it is recommended to use wav format.
 
-		细节
-			音效将被装载进入内存。请勿使用较长的音频文件做音效。
-			对于wav格式，由于受限于目前的实现，故不支持非标准的、带压缩的格式。（如AU导出时若带有metadata将导致无法解析）
+		Details
+			Sound will be loaded into memory. Do not use longer audio files for sound effects.
+			For wav format, due to the current implementation, it does not support non-standard, compressed format. (Such as AU export with metadata will lead to errors.)
 
 - LoadMusic(name:string, path:string, end:number, loop:number)
 
-	装载音乐。name指定名称，path指定路径，end和loop指定循环节终止和持续时间（秒），即循环节范围为end-loop ~ end。
+	Loads music. name specifies the name, path specifies the path, end and loop specify the end of the link(?) and the duration (in seconds), that is, the link range is end-loop ~ end.
 
-	仅支持wav或ogg，推荐使用ogg格式。
+	Only supports wav or ogg, and it's recommended to use ogg format.
 
-		细节
-			音乐将以流的形式装载进入内存，不会一次性完整解码放入内存。故不推荐使用wav格式，请使用ogg作为音乐格式。
-			通过描述循环节可以设置音乐的循环片段。当音乐位置播放到end时会衔接到start。这一步在解码器中进行，以保证完美衔接。
+		Details
+			Music will be streamed into memory and will not be completely decoded into memory at once. It's not recommended to use wav format, please use ogg as music format.
+			You can set the loop of music by describing the loop section. When the music is played to end end will converge to start. This step in the decoder to ensure the perfect convergence.
 
-- LoadFX(name:string, path:string) **[新增]**
+- LoadFX(name:string, path:string) **[NewIncompatible]**
 
-	装载Shader特效。
+	Loads Shader effects.
 
-- CreateRenderTarget(name:string) **[新增]**
+- CreateRenderTarget(name:string) **[NewIncompatible]**
 
-	创建一个名为name的RenderTarget，将被放置于Texture池中，这意味着可以像纹理那样被使用。
+	Creating a RenderTarget named name will be placed in the Texture pool, which means it can be used like a texture.
 
-- IsRenderTarget(name:string) **[新增]**
+- IsRenderTarget(name:string) **[NewIncompatible]**
 
-	检查一个纹理是否为RenderTarget。
+	Checks if a texture is a RenderTarget.
 
 ----------
 
-### 渲染方法
+### Rendering methods
 
-luastg/luastg+使用笛卡尔坐标系（右正上正）作为窗口坐标系，且以屏幕左下角作为原点，Viewport、鼠标消息将以此作为基准。
+LuaSTG / LuaSTG+ uses the Cartesian coordinate system (right up) as the window coordinate system, and with the lower left corner of the screen as the origin. Viewport and mouse messages will use that as a reference.
 
-luastg/luastg+中存在一个全局图像缩放系数，用于在不同模式下进行渲染，该系数将会影响对象的渲染大小、与图像绑定的碰撞大小和部分渲染函数。
+There is a global image scaling factor in LuaSTG+ for rendering in different modes that will affect the object's rendering size, the bounding size of the image to be bound, and the partial rendering function.
 
-luastg/luastg+不开启Z-Buffer进行深度剔除，通过排序手动完成这一工作。
+LuaSTG / LuaSTG+ does not turn Z-Buffer for deep culling and does this manually by sorting.
 
-另外，从luastg+开始，渲染和更新将被独立在两个函数中进行。所有的渲染操作必须在RenderFunc中执行。
+In addition, starting with LuaSTG+, rendering and updating will be done independently in both functions. All rendering operations must be performed in RenderFunc.
 
-**针对RenderTarget特别注意：当RenderTarget处于屏幕缓冲区时，不可以再使用这一RenderTarget进行渲染。**
+**Special Note for RenderTargets: this RenderTarget can no longer be rendered when the RenderTarget is in the screen buffer(?).**
 
 - BeginScene()
 
-	通知渲染开始。该方法必须在RenderFunc中调用。所有渲染动作必须在BeginScene/EndScene中进行。
+	Notification render begins. This method must be called in RenderFunc. All rendering actions must be done between BeginScene / EndScene.
 
-		不兼容性
-			从luastg+开始，渲染操作将被移动到RenderFunc中进行。
+		Incompatibility issues
+			Starting from LuaSTG+, all rendering must be moved to RenderFunc.
 
 - EndScene()
 
-	通知渲染结束。该方法必须在RenderFunc中调用。
+	Notifies the end of the rendering. This method must be called in RenderFunc.
 
 - RenderClear(lstgColor)
 
-	使用指定颜色清空屏幕。在清除颜色的同时会清除深度缓冲区。
+	Empties the screen with the specified color. Clears the depth buffer while clearing the color.
 
 - SetViewport(left:number, right:number, bottom:number, top:number)
 
-	设置视口，将影响裁剪和渲染。
+	Setting the viewport will affect cropping and rendering.
 
 - SetOrtho(left:number, right:number, bottom:number, top:number)
 
-	设置正投影矩阵。left表示x轴最小值，right表示x轴最大值，bottom表示y轴最小值，top表示y轴最大值。
+	Sets the orthographic projection matrix. left represents the minimum value of the x-axis, right represents the maximum value of the x-axis, bottom represents the minimum value of the y-axis, and top represents the maximum value of the y-axis.
 
-		细节
-			创建的正投影矩阵将把z轴限制在[0,1]区间内。
+		Details
+			The orthographic projection matrix created will limit the z-axis within the [0,1] interval.
 
 - SetPerspective(eyeX:number, eyeY:number, eyeZ:number, atX:number, atY:number, atZ:number, upX:number, upY:number, upZ:number, fovy:number, aspect:number, zn:number, zf:number)
 
-	设置透视投影矩阵和观察矩阵。(eyeX,eyeY,eyeZ)表示观察者位置，(atX,atY,atZ)表示观察目标，(upX,upY,upZ)用于表示观察者向上的正方向。fovy描述视角范围（弧度制），aspect描述宽高比，zn和zf描述z轴裁剪距离。
+	Sets the perspective projection matrix and observation matrix. (eyeX, eyeY, eyeZ) indicates the observer's position, (atX, atY, atZ) indicates the observation target, and (upX, upY, upZ) indicates the viewer's upward direction. fovy describes the viewing angle range (in radians), aspect describes the aspect ratio, zn and zf describes the z-axis clipping distance.
 
 - Render(image_name:string, x:number, y:number, [rot:number=0, [hscale:number=1, [vscale:number=1, [z:number=0.5]]]])
 
-	渲染图像。(x,y)指定中心点，rot指定旋转（弧度制），(hscale,vscale)XY轴缩放，z指定Z坐标。
+	Renders an image. (x, y) specifies the center point, rot specifies the rotation (in radians), (hscale, vscale) specifies XY-axis scaling, and z specifies the Z coordinate
 
-	若指定了hscale而没有指定vscale则vscale=hscale。
+	If you specify hscale without specifying vscale then vscale = hscale.
 
-	该函数受全局图像缩放系数影响。
+	This function is affected by the global image scaling factor.
 
 - RenderRect(image_name:string, left:number, right:number, bottom:number, top:number)
 
-	在一个矩阵范围渲染图像。此时z=0.5。
+	Renders the image in a matrix range. Z = 0.5.
 
 - Render4V(image_name:string, x1:number, y1:number, z1:number, x2:number, y2:number, z2:number, x3:number, y3:number, z3:number, x4:number, y4:number, z4:number)
 
-	给出四个顶点渲染图像。此时z=0.5。
+	Gives four vertex rendered images. Z = 0.5(?)
 
 - SetFog([near:number, far:number, [color:lstgColor = 0x00FFFFFF]])
 
-	若参数为空，将关闭雾效果。否则设置一个从near到far的雾。
+	If the parameters are empty, the fog effect will be turned off. Otherwise sets a fog from near to far.
 
 - RenderText(name:string, text:string, x:number, y:number, [scale:number=1, align:integer=5])
 
-	使用纹理字体渲染一段文字。参数name指定纹理名称，text指定字符串，x、y指定坐标，align指定对齐模式。
+	Uses texture fonts to render a piece of text. The parameter name specifies the texture name, text specifies the string, x, y specify the coordinates, align specified alignment mode.
 
-	该函数受全局图像缩放系数影响。
+	This function is affected by the global image scaling factor.
 
-		细节
-			对齐模式指定渲染中心，对齐模式可取值：
-				左上  0 + 0  0
-				左中  0 + 4  4
-				左下  0 + 8  8
-				中上  1 + 0  1
-				中中  1 + 4  5
-				中下  1 + 8  9
-				右上  2 + 0  2
-				右中  2 + 4  6
-				右下  2 + 8  10
-			由于使用了新的布局机制，在渲染HGE字体时在横向上会有少许误差，请手动调整。
+		Details
+			Alignment mode specify the rendering center and alignment direction
+				Top left					0 + 0  0
+				Center left				0 + 4  4
+				Bottom left				0 + 8  8
+				Vertical top			1 + 0  1
+				Vertical middle		1 + 4  5
+				Vertical bottom		1 + 8  9
+				Top right					2 + 0  2
+				Center right			2 + 4  6
+				Lower right				2 + 8  10
+			Due to the new layout mechanism, there will be a slight lateral error when rendering HGE fonts. Please adjust them manually.
 
 - RenderTexture(tex\_name:string, blend:string, vertex1:table, vertex2:table, vertex3:table, vertex4:table)
 
-	直接渲染纹理。
+	Renders the texture directly.
 
-		细节
-			vertex1~4指定各个顶点坐标，其中必须包含以下项：
-				[1] = X坐标
-				[2] = Y坐标
-				[3] = Z坐标
-				[4] = U坐标（以纹理大小为区间）
-				[5] = V坐标（以纹理大小为区间）
-				[6] = 顶点颜色
-			注意该函数效率较低，若要使用请考虑缓存顶点所用table。
+		Details
+			vertex1 ~ 4 specify the coordinates of each vertex, which must contain the following items:
+			[1] = X coordinate
+		  [2] = Y coordinate
+		  [3] = Z coordinate
+		  [4] = U coordinates (based on texture size)
+		  [5] = V coordinate (based on texture size)
+		  [6] = vertex color
+			Note that the function is less efficient. Consider using a cached vertices table.
 
-- RenderTTF(name:string, text:string, left:number, right:number, bottom:number, top:number, fmt:integer, blend:lstgColor)  **[不兼容]**
+- RenderTTF(name:string, text:string, left:number, right:number, bottom:number, top:number, fmt:integer, blend:lstgColor)  **[ChangedIncompatible]**
 
-	渲染TTF字体。
+	Renders TTF fonts.
 
-	该函数受全局图像缩放系数影响。
+	This function is affected by the global image scaling factor.
 
-		细节
-			暂时不支持渲染格式设置。 
-			接口已统一到屏幕坐标系，不需要在代码中进行转换。
+		Details
+		Temporarily does not support rendering formatting.
+		Interface has been unified into the screen coordinate system, does not need to be converted in the code(?).
 
-- PushRenderTarget(name:string) **[新增]**
+- PushRenderTarget(name:string) **[NewIncompatible]**
 
-	将一个RenderTarget作为屏幕缓冲区，并推入栈。
+	Puts a RenderTarget as a screen buffer and push it onto the stack.
 
-	高级方法。
+	This is an advanced method.
 
-		细节
-			lstg+使用栈来管理RenderTarget，这意味着可以嵌套使用RenderTarget。
+		Details
+			LuaSTG+ uses the stack to manage RenderTargets, which means nested RenderTargets can be used.
 
-- PopRenderTarget()  **[新增]**
+- PopRenderTarget()  **[NewIncompatible]**
 
-	将当前使用的RenderTarget从堆栈中移除。
+	Removes the currently used RenderTarget from the stack.
 
-	高级方法。
+	This is an advanced method.
 
-- PostEffect(name:string, fx:string, blend:string, [args:table]) **[新增]**
+- PostEffect(name:string, fx:string, blend:string, [args:table]) **[NewIncompatible]**
 
-	应用PostEffect。参数指定传递给FX的参数表，将会影响后续对该FX的使用。
+	Applies PostEffect. Parameter specifying the parameter table passed to the FX will affect the subsequent use of the FX(?).
 
-	其中blend指定posteffect要以什么样的形式绘制到屏幕上，此时blend的第一分量无效。
+	hich blend specified in posteffect is to be drawn in what forms the screen, then the first component of blend will be invalid(?).
 
-	高级方法。
-	
-		细节
-			对于PostEffect只会渲染第一个technique中的所有pass。
-			可以在PostEffect中使用下列语义注释(不区分大小写)捕获对象：
-				POSTEFFECTTEXTURE获取posteffect的捕获纹理(texture2d类型)。
-				VIEWPORT获取视口大小(vector类型)。
-				SCREENSIZE获取屏幕大小(vector类型)。
+	This is an advanced method.
 
-- PostEffectCapture() **[新增]**
+		Details
+			Only PostEffect will render all pass in the first technique.
+			The following semantic annotations (case insensitive) can be used to capture objects in PostEffect:
+				POSTEFFECTTEXTURE Gets the capture texture (texture2d type) of the posteffect.
+				VIEWPORT Gets the viewport size (vector type).
+				SCREENSIZE get the screen size (vector type).
 
-	开始捕获绘制数据。
+- PostEffectCapture() **[NewIncompatible]**
 
-	从这一步开始，所有后续渲染操作都将在PostEffect缓冲区中进行。
+	Starts capturing the drawing data.
 
-	这一操作等价于`PushRenderTarget(InternalPostEffectBuffer)`。
+	From this step on, all subsequent render operations will take place in the PostEffect buffer.
 
-	高级方法。
+	This operation is equivalent to `PushRenderTarget(InternalPostEffectBuffer)`.
 
-- PostEffectApply(fx_name:string, blend:string, [args:table]) **[新增]**
+	This is an advanced method.
 
-	结束屏幕捕获并应用PostEffect。
+- PostEffectApply(fx_name:string, blend:string, [args:table]) **[NewIncompatible]**
 
-	这一操作等价于：
-	
+	Ends the screen capture and apply PostEffect.
+
+	This operation is equivalent to:
+
 	```lua
 	PopRenderTarget(InternalPostEffectBuffer)
 	PostEffect(InternalPostEffectBuffer, fx_name, blend, args)
 	```
 
-	由于需要配对`InternalPostEffectBuffer`，因此RenderTarget栈顶必须为`InternalPostEffectBuffer`。
-	
-	换言之，代码必须满足：
-	
+	Due to the need to pair `InternalPostEffectBuffer`, the RenderTarget stack must be `InternalPostEffectBuffer`.
+
+	In other words, the code must satisfy:
+
 	```lua
 	PostEffectCapture(...)
-	...  -- 配对的Push/PopRenderTarget操作
+	...  -- Paired Push / PopRenderTarget function calls
 	PostEffectApply(...)
 	```
 
-	高级方法。
+	This is an advanced method.
 
-----------
-
-### 声音播放
+### Audio playback methods
 
 - PlaySound(name:string, vol:number, [pan:number=0.0])
 
-	播放一个音效。vol为音量，取值范围[0~1]，pan为平衡，取值[-1~1]。
+	Plays a sound effect. vol is the volume, in the range of [0~1]，pan is the balance(?), and the value [-1~1]。
 
-		细节
-			luastg+每次只播放一个音效，如果一个音效已在播放中则会打断这个播放从头开始。
+		Details
+			LuaSTG+ plays only one sound at a time, and if one sound (of the same resource name?) is already playing it will interrupt the playback and start from scratch.
 
-- StopSound(name:string) **[新增]**
+- StopSound(name:string) **[NewIncompatible]**
 
-	停止播放音效。name为资源名称。
+	Stops playing audio. name is the name of the resource.
 
-- PauseSound(name:string) **[新增]**
+- PauseSound(name:string) **[NewIncompatible]**
 
-	暂停播放音效。name为资源名称。
+	Pauses playing audio. name is the name of the resource.
 
-- ResumeSound(name:string) **[新增]**
+- ResumeSound(name:string) **[NewIncompatible]**
 
-	继续播放音效。name为资源名称。
+	Continues playing audio. name is the name of the resource.
 
-- GetSoundState(name:string):string **[新增]**
+- GetSoundState(name:string):string **[NewIncompatible]**
 
-	获取音效播放状态，将返回paused、playing、stopped。
+	Gets sound playback status. Will return paused, playing, or stopped.
 
 - PlayMusic(name:string, [vol:number=1.0, position:number=0])
 
-	播放音乐。name为资源名称，vol为音量，position为起始播放位置（秒）。
+	Plays music. name is the resource name, vol is the volume, and position is the starting playback position (in seconds.)
 
 - StopMusic(name:string)
 
-	停止播放音乐。该操作会使音乐播放位置回到开头。name为资源名称。
+	Stops playing music. This will return the music playback position to the beginning. name is the name of the resource.
 
 - PauseMusic(name:string)
 
-	暂停播放音乐。name为资源名称。
+	Pauses playing music. name is the name of the resource.
 
 - ResumeMusic(name:string)
 
-	继续播放音乐。name为资源名称。
+	Resumes music playback. name is the name of the resource.
 
 - GetMusicState(name:string):string
 
-	获取音乐播放状态，将返回paused、playing、stopped。
+	Gets music playback status. Returns paused, playing, or stopped.
 
-- UpdateSound()  **[否决]**
+- UpdateSound()  **[Deprecated]**
 
-	**该方法已不起任何作用，将于后续版本移除。**
+	**The method has no effect, will be removed in subsequent versions.**
 
 - SetSEVolume(vol:number)
 
-	设置全局音效音量，将影响后续播放音效的音量。
+	Sets the global sound volume, will affect the volume of subsequent sound effects.
 
-	音量值范围为[0,1]。
+	The volume value range is [0,1].
 
-- SetBGMVolume([vol:number] | [name:string, vol:number]) **[新]**
+- SetBGMVolume([vol:number] | [name:string, vol:number]) **[NewCompatible]**
 
-	若参数个数为1，则设置全局音乐音量。该操作将影响后续播放音乐的音量。
+	If the number of parameters is 1, set the global music volume. This will affect the volume of subsequent music playback.
 
-	若参数个数为2，则设置指定音乐的播放音量。
+	If the number of parameters is 2, set the playback volume of the specified music.
 
-	音量值范围为[0,1]。
+	The volume value range is [0,1].
 
-----------
+### Input methods
 
-### 输入
+Currently, handle inputs are mapped to locations 0x920xB1 and 0xDF0xFE (2 handles total, 32 keys).
 
-当前，手柄输入被映射到0x92~0xB1和0xDF~0xFE（共2个手柄、32个按键）的位置上。
-
-其中，X轴Y轴的位置被映射到前4个按键上，对应上下左右。
+Amongst them, the X-axis Y-axis position is mapped to the first four buttons, corresponding to up, down, left and right.
 
 - GetKeyState(vk\_code:integer):boolean
 
-	给出虚拟键代码检测是否按下。
+	Gives virtual key code detection when pressed.
 
-		细节
-			VK_CODE的具体含义请查阅MSDN。
+		Details
+			VK_CODE specific meaning, please refer to MSDN's documentation.
 
 - GetLastKey():integer
 
-	返回最后一次输入的按键的虚拟键代码。
+	Returns the virtual key code for the last key entered.
 
 - GetLastChar():string
 
-	返回上一次输入的字符。
+	Returns the last character entered.
 
-- GetMousePosition():number,number **[新增]**
+- GetMousePosition():number,number **[NewIncompatible]**
 
-	获取鼠标的位置，以窗口左下角为原点。
+	Gets the location of the mouse relative to the bottom left corner of the window.
 
-- GetMouseState(button:integer):boolean **[新增]**
+- GetMouseState(button:integer):boolean **[NewIncompatible]**
 
-	检查鼠标按键是否按下。button可取0、1、2，分别对应鼠标左键、中键、右键。
+	Checks if the mouse button is pressed. Button may be 0, 1 or 2, corresponding to the left, middle, and right button, respectively.
 
 ----------
 
@@ -881,19 +877,17 @@ luastg/luastg+不开启Z-Buffer进行深度剔除，通过排序手动完成这�
 
 - Snapshot(file\_path:string)
 
-	截屏并保存到file\_path。格式为PNG。
+	Saves a screenshot to file file\_path. Uses PNG format.
 
-- Execute(path:string, [arguments:string=nil, directory:string=nil, wait:boolean=true]):boolean  **[新增]**
+- Execute(path:string, [arguments:string=nil, directory:string=nil, wait:boolean=true]):boolean  **[NewIncompatible]**
 
-	执行外部程序。参数path为可执行程序路径，arguments为参数，directory为工作目录，wait表明是否等待程序执行完毕。
+	Executes external program. Parameter path is for the executable program path, arguments for the parameters, directory for the working directory, wait indicates whether to wait for the program execution is completed.
 
-	成功返回true，失败返回false。
+	Returns true if successful, false if failed.
 
-----------
+### Built-in mathematical methods
 
-### 内置数学方法
-
-下述数学函数均以角度制为基准，含义同C语言库函数。
+The following mathematical functions directly call the C standard library functions' equivalents (resulting in better performance than Lua's math module? To be confirmed. It's LuaJIT after all!)
 
 - sin(ang)
 - cos(ang)
@@ -903,75 +897,71 @@ luastg/luastg+不开启Z-Buffer进行深度剔除，通过排序手动完成这�
 - atan(v)
 - atan2(y,x)
 
-----------
-
-### 内置对象构造方法
+### Built-in object constructor methods
 
 - Rand()
 
-	构造一个随机数生成器。以当前系统tick数做Seed。
+	Constructs a random number generator. The current system time (ticks) is used as the seed.
 
 - Color(\[argb:integer\] | [a:integer, r:integer, g:integer, b:integer])
 
-	构造一个颜色。
+	Constructs a Color.
 
 - BentLaserData()
 
-	构造一个曲线激光控制器。
+	Constructs a curved laser controller(?)
 
-----------
-
-### 调试方法
+### Debug methods
 
 - ObjTable():table
 
-	该方法可以获得对象池所在的table。慎用。
+	This method returns the object pool table. Use with caution!
 
-- Registry():table  **[移除]**
+- Registry():table  **[Removed]**
 
-	返回注册表。
+	Returns to the registry.
 
-		细节
-			由于该方法过于不安全，已被移除。
+		Details
+			This method has been removed because it's insecure or inaccurate.
 
-## 全局回调函数
+## Global callback functions
 
-下述回调函数必须定义在脚本的全局范围中。
+The following callback function must be defined in the global scope of the script and are called automatically by LuaSTG+.
 
 - GameInit()
 
-	在游戏框架初始化完毕后，游戏循环启动前调用。
+	After the game frame is initialized, the game loop is called before it starts.
 
 - FocusLoseFunc()
 
-	在渲染窗口失去焦点时调用。
+	Called when the render window loses focus.
 
 - FocusGainFunc()
 
-	在渲染窗口获得焦点时调用。
+	Called when the render window gets the focus.
 
 - FrameFunc():boolean
 
-	帧处理函数，每帧被调用来处理逻辑。
+	Frame processing function. It's called each frame, meant to be used to handle your game's logic.
 
-	若返回true将终止游戏循环，退出游戏。
+	It must return a boolean value. If true, it'll terminate the game loop, thus quitting the game. Return false (to be confirmed: or don't return anything at all? This doesn't seem to crash the game) to keep the game and the main loop running.
 
-- RenderFunc() **[新增]**
+- RenderFunc() **[NewIncompatible]**
 
-	渲染处理函数，每帧被调用时用来渲染场景。
+	Used to render the scene after each frame (FrameFunc) is called.
 
-## 第三方库
+## Third party libraries
 
-### cjson **[新增]**
+### cjson **[NewIncompatible]**
 
-#### 方法
+#### Methods
 
-更多帮助请参考[cjson主页](http://www.kyne.com.au/~mark/software/lua-cjson.php)
+For more information, please refer to [cjson](http://www.kyne.com.au/~mark/software/lua-cjson.php)'s' home page.
 
 - encode(table):string
 
-	编码一个table为字符串。
+	Encodes a Lua table as a JSON string.
 
 - decode(string):table
 
-	解码一个字符串为table。
+	Decodes a JSON string to a Lua table.

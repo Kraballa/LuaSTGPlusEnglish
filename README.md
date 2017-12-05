@@ -10,7 +10,7 @@ Currently, *documentation translations are still being worked on*. Tutorials, us
 
 ## Documentation
 
-* [LuaSTG API documentation](https://github.com/RemindMeToCheck/LuaSTGPlusEnglish/blob/translation-en/APIManual.md) (**Not** translated yet!)
+* [LuaSTG API documentation](https://github.com/RemindMeToCheck/LuaSTGPlusEnglish/blob/translation-en/APIManual.md) (Translated by [@GCPBunBun](https://twitter.com/gcpbunbun))
 * [LuaSTG to LuaSTG+ migration guide](https://github.com/RemindMeToCheck/LuaSTGPlusEnglish/blob/translation-en/luastg%E8%BF%81%E7%A7%BB%E5%90%91%E5%AF%BC.md) (**Not** translated yet!)
 
 ## Guides and tutorials
